@@ -183,19 +183,21 @@ const IconLogout = (p) => (
 function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      const savedUser = localStorage.getItem("cognitiax_crm_user");
-
-      if (!savedUser) {
-        return null;
-      }
-
-      return JSON.parse(savedUser);
+      return JSON.parse(sessionStorage.getItem("cognitiax_crm_user")) || null;
     } catch {
       return null;
     }
   });
 
-  const isAuthenticated = !!currentUser;
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    const loggedIn = sessionStorage.getItem("cognitiax_crm_logged_in") === "true";
+    try {
+      const user = JSON.parse(sessionStorage.getItem("cognitiax_crm_user"));
+      return loggedIn && !!user?.email;
+    } catch {
+      return false;
+    }
+  });
 
   const [whatsappConnected, setWhatsappConnected] = useState(false);
   const [whatsappLoading, setWhatsappLoading] = useState(true);
@@ -230,18 +232,16 @@ function App() {
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
-  const handleLogin = (user) => {
-  setCurrentUser(user);
-};
-
-const handleLogout = () => {
-  localStorage.removeItem("cognitiax_crm_logged_in");
-  localStorage.removeItem("cognitiax_crm_user");
-
-  setCurrentUser(null);
-  setWhatsappConnected(false);
-  setWhatsappLoading(false);
-};
+  const handleLogout = () => {
+    sessionStorage.removeItem("cognitiax_crm_logged_in");
+    sessionStorage.removeItem("cognitiax_crm_user");
+    localStorage.removeItem("cognitiax_crm_logged_in");
+    localStorage.removeItem("cognitiax_crm_user");
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    setWhatsappConnected(false);
+    setWhatsappLoading(false);
+  };
   const [activeMenu, setActiveMenu] = useState("Dashboard");
 
   const [showStudentForm, setShowStudentForm] =
@@ -1591,8 +1591,15 @@ Thank you. 🙏
   /* ================================================= */
 
   if (!isAuthenticated) {
-  return <Login onLogin={handleLogin} />;
-}
+    return (
+      <Login
+        onLogin={(user) => {
+          setCurrentUser(user);
+          setIsAuthenticated(true);
+        }}
+      />
+    );
+  }
 
   return (
 
@@ -1659,13 +1666,13 @@ Thank you. 🙏
 
         <div className="sidebar-bottom">
 
-          <button
-  className="logout-btn"
-  onClick={handleLogout}
->
-  <IconLogout size={15} />
-  Log out
-</button>
+          <button className="logout-btn" onClick={handleLogout}>
+
+            <IconLogout size={15} />
+
+            Log out
+
+          </button>
 
         </div>
 
@@ -1949,18 +1956,18 @@ Thank you. 🙏
             <div className="profile">
 
               <div className="avatar">
-                I
+                {(currentUser?.name || "U").charAt(0).toUpperCase()}
               </div>
 
 
               <div>
 
                 <strong>
-                  Imran
+                  {currentUser?.name || "User"}
                 </strong>
 
                 <span>
-                  Administrator
+                  {currentUser?.role || "User"}
                 </span>
 
               </div>
