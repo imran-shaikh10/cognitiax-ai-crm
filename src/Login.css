@@ -415,3 +415,71 @@ body {
     margin-bottom: 8px;
   }
 }
+/* =========================================
+   MOBILE LOGIN SCROLL FIX
+   KEEP EXISTING DESIGN UNCHANGED
+========================================= */
+
+@media (max-width: 640px) {
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-height: 100%;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cx-login-page {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: auto;
+
+    display: flex;
+    flex-direction: column;
+
+    /* IMPORTANT */
+    overflow: visible;
+  }
+
+  .cx-login-showcase {
+    width: 100%;
+    min-height: auto;
+    height: auto;
+    flex: none;
+    overflow: hidden;
+  }
+
+  .cx-login-showcase-inner {
+    width: 100%;
+    min-height: auto;
+    height: auto;
+  }
+
+  .cx-login-form-area {
+    width: 100%;
+    min-height: auto;
+    height: auto;
+    flex: none;
+
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+
+    padding-bottom: 50px;
+  }
+
+  .cx-login-card {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    flex-shrink: 0;
+  }
+}
