@@ -588,7 +588,20 @@ const [editingStudent, setEditingStudent] = useState(null);
     try { return JSON.parse(localStorage.getItem("announcements")) || []; } catch { return []; }
   });
   const [whatsappLogs, setWhatsappLogs] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("whatsappLogs")) || []; } catch { return []; }
+    try {
+      const saved = JSON.parse(localStorage.getItem("whatsappLogs")) || [];
+      // Normalise old browser logs: the wa.me flow cannot confirm delivery/failure.
+      return Array.isArray(saved)
+        ? saved.map((log) => ({
+            ...log,
+            status: log?.status === "Failed"
+              ? "Opened in WhatsApp - press Send"
+              : log?.status || "Prepared - open WhatsApp and press Send",
+          }))
+        : [];
+    } catch {
+      return [];
+    }
   });
   const [communicationTab, setCommunicationTab] = useState("Announcements");
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
