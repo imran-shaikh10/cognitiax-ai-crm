@@ -1716,7 +1716,31 @@ Thank you. 🙏
           .dashboard-empty{padding:28px 0;text-align:center;color:#98a2b3;font-size:13px;}
           .dashboard-bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.dashboard-progress-panel{padding-bottom:8px}.snapshot-row{padding:14px 18px;border-bottom:1px solid #f0f2f4}.snapshot-row:last-child{border-bottom:0}.snapshot-row>div:first-child{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.snapshot-row span{font-size:12px;color:#667085}.snapshot-row strong{font-size:13px;color:#111827}.progress-track{height:7px;border-radius:99px;background:#edf1ef;overflow:hidden}.progress-track span{display:block;height:100%;background:#006100;border-radius:99px}.gold-track span{background:#b48609}.dashboard-quick-card{margin:0;box-shadow:none;border:1px solid #e6e9ee}.quick-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.dashboard-quick-card .quick-btn{margin:0!important;}
           @media (max-width:1050px){.dashboard-stat-grid,.dashboard-mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-main-grid,.dashboard-bottom-grid{grid-template-columns:1fr;}}
-          @media (max-width:640px){.dashboard-page{padding-top:0}.dashboard-hero{align-items:flex-start;flex-direction:column}.dashboard-date{align-self:flex-start}.dashboard-stat-grid,.dashboard-mini-grid{grid-template-columns:1fr}.quick-action-grid{grid-template-columns:1fr 1fr}.dashboard-hero h1{font-size:25px;}}
+          @media (max-width:640px){
+            .dashboard-page{padding-top:0;width:100%;min-width:0}
+            .dashboard-hero{align-items:flex-start;flex-direction:column;gap:12px}
+            .dashboard-date{align-self:flex-start}
+            .dashboard-stat-grid,.dashboard-mini-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:10px}
+            .dashboard-mini-card{min-width:0;width:100%;padding:12px 10px;box-sizing:border-box}
+            .quick-action-grid{grid-template-columns:1fr 1fr}
+            .dashboard-hero h1{font-size:25px;}
+          }
+
+          /* ===== MOBILE TABLE SCROLL ===== */
+          .students-data-scroll{
+            width:100%;
+            max-width:100%;
+            overflow-x:auto;
+            overflow-y:hidden;
+            -webkit-overflow-scrolling:touch;
+            scrollbar-width:thin;
+            box-sizing:border-box;
+          }
+          .students-data-scroll table{
+            min-width:1050px !important;
+            width:1050px;
+          }
+          .students-data-scroll::-webkit-scrollbar{height:6px;}
 
           /* ===== GLOBAL APP CONTENT ALIGNMENT ===== */
           .main-content {
@@ -1925,6 +1949,334 @@ Thank you. 🙏
               padding: 16px !important;
             }
           }
+
+          @media (max-width:640px) {
+            .students-page .students-table-card {
+              width:100% !important;
+              max-width:100% !important;
+              overflow:hidden !important;
+            }
+
+            .students-data-scroll {
+              display:block;
+              width:100%;
+              max-width:100%;
+              overflow-x:auto !important;
+              overflow-y:hidden;
+              -webkit-overflow-scrolling:touch;
+              touch-action:pan-x;
+            }
+
+            .students-data-scroll table {
+              min-width:1050px !important;
+              width:1050px !important;
+              table-layout:auto !important;
+            }
+          }
+
+          /* =====================================================
+             FINAL MOBILE POLISH
+             ===================================================== */
+
+          @media (max-width: 640px) {
+
+            /* Header: title/subtitle centered, controls stay left/right without overlap */
+            .header {
+              position: relative !important;
+              width: 100%;
+              min-height: 132px;
+              display: flex !important;
+              flex-direction: column !important;
+              align-items: center !important;
+              justify-content: flex-start !important;
+              text-align: center !important;
+              padding: 8px 0 10px !important;
+              box-sizing: border-box;
+            }
+
+            .header > div:first-child {
+              width: 100% !important;
+              min-width: 0 !important;
+              text-align: center !important;
+              display: flex !important;
+              flex-direction: column !important;
+              align-items: center !important;
+              justify-content: center !important;
+              padding: 0 !important;
+              box-sizing: border-box;
+              order: 1 !important;
+            }
+
+            .header > div:first-child h1 {
+              width: 100% !important;
+              margin: 0 !important;
+              text-align: center !important;
+              font-size: 27px !important;
+              line-height: 1.15 !important;
+              white-space: nowrap;
+            }
+
+            .header > div:first-child p {
+              width: 100% !important;
+              max-width: 100% !important;
+              margin: 5px 0 0 !important;
+              text-align: center !important;
+              font-size: 12px !important;
+              line-height: 1.25 !important;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+
+            .header-right {
+              position: absolute !important;
+              left: 0 !important;
+              right: 0 !important;
+              bottom: 10px !important;
+              width: 100% !important;
+              height: 44px !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: space-between !important;
+              pointer-events: none;
+              box-sizing: border-box;
+            }
+
+            .header-right .notification {
+              position: relative !important;
+              transform: none !important;
+              margin: 0 !important;
+              pointer-events: auto;
+              flex: 0 0 auto;
+              z-index: 2;
+            }
+
+            /* Keep notification badge attached to the bell, never the header */
+            .header-right .notification::after,
+            .header-right .notification::before {
+              position: absolute !important;
+            }
+
+            /* Keep notification badge attached to the bell, never the header */
+            .header-right .notification::after,
+            .header-right .notification::before {
+              position: absolute !important;
+            }
+
+            .header-right .profile {
+              position: static !important;
+              transform: none !important;
+              margin: 0 !important;
+              pointer-events: auto;
+              flex: 0 0 auto;
+              max-width: 155px;
+              z-index: 2;
+              z-index: 2;
+            }
+
+            .header-right .profile > div:last-child {
+              min-width: 0;
+            }
+
+            .header-right .profile strong {
+              display: block;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+
+            .header-right .profile span {
+              display: block;
+              white-space: nowrap;
+            }
+
+            /* Center page-action headings */
+            .main-content > .students-page > .page-actions {
+              justify-content: center !important;
+              align-items: center !important;
+              text-align: center !important;
+            }
+
+            .main-content > .students-page > .page-actions > div {
+              width: 100% !important;
+              text-align: center !important;
+            }
+
+            .main-content > .students-page > .page-actions h2,
+            .main-content > .students-page > .page-actions p {
+              text-align: center !important;
+            }
+
+            .main-content > .students-page > .page-actions button {
+              align-self: center !important;
+            }
+
+            /* =================================================
+               COURSES - HORIZONTAL SWIPE
+               ================================================= */
+
+            .courses-list-scroll {
+              width: 100%;
+              max-width: 100%;
+              overflow-x: auto;
+              overflow-y: hidden;
+              -webkit-overflow-scrolling: touch;
+              touch-action: pan-x;
+              scrollbar-width: thin;
+              padding-bottom: 4px;
+              box-sizing: border-box;
+            }
+
+            .courses-list-scroll::-webkit-scrollbar {
+              height: 5px;
+            }
+
+            .course-item-card {
+              min-width: 900px !important;
+              width: 900px !important;
+              max-width: none !important;
+              box-sizing: border-box;
+            }
+
+            /* Keep the course content readable while swiping */
+            .course-item-card > div:first-child {
+              min-width: 870px !important;
+            }
+
+            /* Courses search/filter becomes clean on mobile */
+            .courses-filter-card {
+              width: 100%;
+              box-sizing: border-box;
+              justify-content: center !important;
+              text-align: center;
+              padding: 14px !important;
+            }
+
+            .courses-filter-card > div:first-child {
+              width: 100%;
+              text-align: center;
+            }
+
+            .courses-filter-card > div:last-child {
+              width: 100%;
+              display: flex !important;
+              justify-content: center !important;
+              flex-wrap: nowrap !important;
+            }
+
+            .courses-filter-card input {
+              width: calc(100% - 82px) !important;
+              min-width: 0 !important;
+            }
+
+            .courses-filter-card select {
+              width: 74px !important;
+              flex: 0 0 74px;
+            }
+
+            /* =================================================
+               FEES - COMPACT MOBILE STATS
+               ================================================= */
+
+            .fees-stats-grid {
+              display: grid !important;
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              gap: 7px !important;
+              margin-bottom: 12px !important;
+            }
+
+            .fees-stats-grid .stat-card {
+              min-width: 0 !important;
+              min-height: 0 !important;
+              height: auto !important;
+              padding: 10px 8px !important;
+              border-radius: 11px !important;
+              gap: 6px !important;
+              box-sizing: border-box;
+            }
+
+            .fees-stats-grid .stat-icon {
+              width: 30px !important;
+              height: 30px !important;
+              min-width: 30px !important;
+              border-radius: 8px !important;
+              font-size: 15px !important;
+            }
+
+            .fees-stats-grid .stat-card p {
+              margin: 0 0 3px !important;
+              font-size: 10px !important;
+              line-height: 1.15 !important;
+            }
+
+            .fees-stats-grid .stat-card h2 {
+              margin: 0 !important;
+              font-size: 16px !important;
+              line-height: 1.1 !important;
+              white-space: nowrap;
+            }
+
+            /* Keep all three fee cards on one row */
+            .fees-stats-grid .stat-card:last-child {
+              grid-column: auto !important;
+              justify-self: stretch;
+            }
+
+            /* Reduce card spacing across mobile pages */
+            .students-page .students-table-card {
+              margin-bottom: 12px !important;
+            }
+
+            .students-page .card-header {
+              padding: 14px 15px !important;
+            }
+          }
+
+          @media (max-width: 380px) {
+
+            .header > div:first-child h1 {
+              font-size: 24px !important;
+            }
+
+            .header {
+              min-height: 126px;
+            }
+
+            .header > div:first-child p {
+              max-width: 155px !important;
+              font-size: 10px !important;
+            }
+
+            .header-right .profile {
+              max-width: 125px;
+            }
+
+            .header-right .profile strong {
+              font-size: 13px !important;
+            }
+
+            .header-right .profile span {
+              font-size: 11px !important;
+            }
+
+            .fees-stats-grid {
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              gap: 5px !important;
+            }
+
+            .fees-stats-grid .stat-card {
+              padding: 8px 6px !important;
+            }
+
+            .fees-stats-grid .stat-card h2 {
+              font-size: 14px !important;
+            }
+
+            .fees-stats-grid .stat-card p {
+              font-size: 9px !important;
+            }
+          }
+
         `}</style>
 
         {/* ================= HEADER ================= */}
@@ -2421,6 +2773,8 @@ Thank you. 🙏
               </div>
 
 
+              <div className="students-data-scroll">
+
               <table>
 
 
@@ -2572,6 +2926,8 @@ Thank you. 🙏
 
               </table>
 
+              </div>
+
 
             </div>
 
@@ -2657,7 +3013,7 @@ Thank you. 🙏
             )}
 
             {/* Search / Filter */}
-            <div style={{
+            <div className="courses-filter-card" style={{
               background: "#fff", border: "1px solid #e7e9e5", borderRadius: 12,
               padding: "10px 12px", marginBottom: 12, display: "flex", gap: 10,
               justifyContent: "space-between", alignItems: "center", flexWrap: "wrap"
@@ -2703,12 +3059,12 @@ Thank you. 🙏
               }
 
               return (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div className="courses-list-scroll" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {filteredCourses.map((course) => {
                     const courseBatches = batches.filter((b) => b.course === course.name);
                     const courseStudents = students.filter((s) => s.course === course.name);
                     return (
-                      <div key={course.id} style={{
+                      <div key={course.id} className="course-item-card" style={{
                         background: "#fff", border: "1px solid #e4e8e3", borderRadius: 14,
                         boxShadow: "0 4px 15px rgba(20,30,20,.035)", overflow: "hidden"
                       }}>
@@ -3211,7 +3567,7 @@ Thank you. 🙏
 
         {activeMenu === "Fees" && (
           <div className="students-page">
-            <section className="stats-grid" style={{ marginBottom: 20 }}>
+            <section className="stats-grid fees-stats-grid" style={{ marginBottom: 20 }}>
               <div className="stat-card"><div className="stat-icon blue">₹</div><div><p>Total Fees</p><h2>{formatMoney(getTotalFees())}</h2></div></div>
               <div className="stat-card"><div className="stat-icon purple">₹</div><div><p>Total Paid</p><h2>{formatMoney(getPaidFees())}</h2></div></div>
               <div className="stat-card"><div className="stat-icon red">₹</div><div><p>Total Pending</p><h2>{formatMoney(getPendingFees())}</h2></div></div>

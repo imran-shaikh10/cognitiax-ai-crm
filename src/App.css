@@ -35,6 +35,7 @@
   padding: 0;
   box-sizing: border-box;
   font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
 }
 
 html, body, #root {
@@ -42,9 +43,17 @@ html, body, #root {
   width: 100%;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   background: var(--paper);
   color: var(--ink);
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+  -webkit-text-size-adjust: 100%;
 }
 
 button {
@@ -52,13 +61,20 @@ button {
   font-family: inherit;
 }
 
+img, svg {
+  max-width: 100%;
+  display: block;
+}
+
 /* MAIN APP */
 
 .app {
   display: flex;
-  width: 100vw;
+  width: 100%;
+  max-width: 100vw;
   min-height: 100vh;
   background: var(--paper);
+  overflow-x: hidden;
 }
 
 /* SIDEBAR */
@@ -185,8 +201,10 @@ button {
 
 .main-content {
   flex: 1;
+  min-width: 0;
   padding: 30px 40px 56px;
   overflow-x: hidden;
+  max-width: 100%;
 }
 
 /* HEADER */
@@ -196,6 +214,8 @@ button {
   align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 14px;
 }
 
 .header h1 {
@@ -216,6 +236,7 @@ button {
   display: flex;
   align-items: center;
   gap: 18px;
+  flex-wrap: wrap;
 }
 
 .notification {
@@ -230,6 +251,7 @@ button {
   justify-content: center;
   position: relative;
   transition: border-color 0.15s ease;
+  flex-shrink: 0;
 }
 
 .notification:hover {
@@ -253,12 +275,18 @@ button {
   gap: 10px;
   padding-left: 16px;
   border-left: 1px solid var(--line);
+  min-width: 0;
 }
 
 .profile strong {
   font-size: 13.5px;
   font-weight: 600;
   color: var(--navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+  display: inline-block;
 }
 
 .profile span {
@@ -266,6 +294,10 @@ button {
   font-size: 11.5px;
   color: var(--ink-soft);
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
 }
 
 .avatar {
@@ -280,6 +312,7 @@ button {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 15px;
+  flex-shrink: 0;
 }
 
 /* STATS */
@@ -296,6 +329,7 @@ button {
 
 .stat-card {
   flex: 1;
+  min-width: 0;
   padding: 20px 24px;
   border-right: 1px solid var(--line);
   display: flex;
@@ -322,6 +356,7 @@ button {
   font-weight: 700;
   color: var(--navy);
   margin-bottom: 6px;
+  word-break: break-word;
 }
 
 .stat-icon {
@@ -383,11 +418,13 @@ button {
   border-radius: var(--radius);
   padding: 22px;
   box-shadow: 0 1px 2px rgba(10, 18, 41, 0.04);
+  min-width: 0;
 }
 
 .table-card {
   overflow-x: auto;
   max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .card-header {
@@ -395,6 +432,8 @@ button {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .card-header h2,
@@ -575,6 +614,7 @@ td {
 
 .activity div:nth-child(2) {
   flex: 1;
+  min-width: 0;
 }
 
 .activity strong {
@@ -587,12 +627,15 @@ td {
   font-size: 12.5px;
   color: var(--ink-soft);
   margin-top: 3px;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .activity span {
   font-size: 11.5px;
   color: var(--ink-faint);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* COURSES */
@@ -610,6 +653,7 @@ td {
   justify-content: space-between;
   font-size: 13px;
   margin-bottom: 8px;
+  gap: 10px;
 }
 
 .course-info strong {
@@ -680,10 +724,11 @@ td {
 
 .search-box input {
   flex: 1;
+  min-width: 0;
   border: none;
   outline: none;
   background: transparent;
-  font-size: 13.5px;
+  font-size: 16px; /* prevents iOS auto-zoom on focus */
   color: var(--ink);
 }
 
@@ -724,6 +769,8 @@ td {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .form-header h2 {
@@ -743,6 +790,7 @@ td {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .close-btn:hover {
@@ -762,6 +810,7 @@ td {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .form-group label {
@@ -775,9 +824,11 @@ td {
   border: 1px solid var(--line);
   border-radius: 9px;
   padding: 10px 12px;
-  font-size: 13.5px;
+  font-size: 16px; /* prevents iOS auto-zoom on focus */
   color: var(--ink);
   background: var(--paper);
+  width: 100%;
+  max-width: 100%;
 }
 
 .form-group input:focus,
@@ -791,6 +842,7 @@ td {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .cancel-btn {
@@ -831,6 +883,7 @@ td {
   padding: 22px;
   overflow-x: auto;
   max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .students-table-card table {
@@ -843,6 +896,7 @@ td {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .edit-btn {
@@ -880,25 +934,6 @@ td {
   color: #fff;
   border-color: var(--rust);
   box-shadow: 0 4px 10px rgba(192, 67, 44, 0.3);
-}
-
-@media (max-width: 700px) {
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .page-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .search-box {
-    max-width: none;
-  }
-
-  .students-table-card {
-    overflow-x: auto;
-  }
 }
 
 /* COMING SOON */
@@ -956,518 +991,6 @@ td {
   background: var(--navy-2);
 }
 
-/* =========================================================
-   RESPONSIVE DESIGN
-   Desktop theme remains unchanged
-========================================================= */
-
-/* ---------- TABLET ---------- */
-
-@media (max-width: 1200px) {
-
-  .stats-grid {
-    flex-wrap: wrap;
-  }
-
-  .stat-card {
-    flex: 1 1 50%;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .main-content {
-    padding-left: 28px;
-    padding-right: 28px;
-  }
-
-  .content-grid,
-  .bottom-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-
-/* ---------- SMALL LAPTOP / TABLET ---------- */
-
-@media (max-width: 900px) {
-
-  .sidebar {
-    width: 220px;
-  }
-
-  .main-content {
-    min-width: 0;
-    width: calc(100% - 220px);
-    padding: 26px 24px 48px;
-  }
-
-  .content-grid,
-  .bottom-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .stats-grid {
-    flex-wrap: wrap;
-  }
-
-  .stat-card {
-    flex: 1 1 50%;
-  }
-}
-
-
-/* ---------- MOBILE ---------- */
-
-@media (max-width: 700px) {
-
-  html,
-  body,
-  #root {
-    width: 100%;
-    min-height: 100%;
-    height: auto;
-    overflow-x: hidden;
-    overflow-y: auto;
-  }
-
-  body {
-    overflow-x: hidden;
-  }
-
-  .app {
-    width: 100%;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-  }
-
-  /* MOBILE SIDEBAR / TOP NAV */
-
-  .sidebar {
-    width: 100%;
-    min-height: auto;
-    height: auto;
-    flex-shrink: 0;
-    padding: 12px 14px;
-    position: relative;
-    z-index: 20;
-  }
-
-  .logo {
-    padding: 4px 4px 12px;
-    margin-bottom: 10px;
-    justify-content: flex-start;
-  }
-
-  .logo-icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-  }
-
-  .logo h2 {
-    display: block;
-    font-size: 15px;
-  }
-
-  .logo span {
-    display: block;
-    font-size: 10px;
-  }
-
-  .menu {
-    width: 100%;
-    display: flex;
-    flex-direction: row;
-    gap: 6px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 2px 0 5px;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .menu::-webkit-scrollbar {
-    display: none;
-  }
-
-  .menu-item {
-    width: auto;
-    min-width: max-content;
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 9px 12px;
-    border-left: 0;
-    border-bottom: 2px solid transparent;
-    border-radius: 8px;
-    font-size: 12px;
-    white-space: nowrap;
-  }
-
-  .menu-item.active {
-    border-left: 0;
-    border-bottom: 2px solid var(--accent-2);
-  }
-
-  .menu-icon {
-    margin-right: 7px;
-    width: 16px;
-  }
-
-  .menu-item span:last-child {
-    display: inline;
-  }
-
-  .sidebar-bottom {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid var(--navy-line);
-  }
-
-  .logout-btn {
-    width: auto;
-    padding: 7px 10px;
-    text-align: left;
-    font-size: 12px;
-  }
-
-  /* MAIN CONTENT */
-
-  .main-content {
-    width: 100%;
-    min-width: 0;
-    flex: 1;
-    padding: 22px 14px 45px;
-    overflow-x: hidden;
-    overflow-y: visible;
-  }
-
-  /* HEADER */
-
-  .header {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-    margin-bottom: 22px;
-  }
-
-  .header h1 {
-    font-size: 28px;
-    line-height: 1.15;
-  }
-
-  .header p {
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
-  .header-right {
-    width: 100%;
-    justify-content: space-between;
-    gap: 10px;
-  }
-
-  .profile {
-    padding-left: 10px;
-    gap: 8px;
-  }
-
-  .profile strong {
-    font-size: 12px;
-  }
-
-  .profile span {
-    font-size: 10px;
-  }
-
-  .avatar {
-    width: 36px;
-    height: 36px;
-  }
-
-  /* STATS */
-
-  .stats-grid {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 18px;
-    border-radius: 12px;
-  }
-
-  .stat-card {
-    width: 100%;
-    flex: none;
-    padding: 17px 16px;
-    border-right: none;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .stat-card:last-child {
-    border-bottom: none;
-  }
-
-  .stat-card h2 {
-    font-size: 23px;
-  }
-
-  /* CONTENT */
-
-  .content-grid,
-  .bottom-grid {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 14px;
-    margin-bottom: 14px;
-  }
-
-  /* CARDS */
-
-  .table-card,
-  .quick-card,
-  .activity-card,
-  .course-card {
-    width: 100%;
-    min-width: 0;
-    padding: 17px;
-    border-radius: 12px;
-  }
-
-  .card-header {
-    gap: 10px;
-    margin-bottom: 15px;
-  }
-
-  .card-header h2,
-  .quick-card h2,
-  .activity-card h2,
-  .course-card h2 {
-    font-size: 16px;
-  }
-
-  /* TABLES */
-
-  .table-card {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .table-card table {
-    min-width: 650px;
-  }
-
-  .students-table-card {
-    width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    padding: 16px;
-  }
-
-  .students-table-card table {
-    min-width: 850px;
-  }
-
-  /* QUICK ACTIONS */
-
-  .quick-btn {
-    padding: 11px 12px;
-    font-size: 13px;
-  }
-
-  /* STUDENTS */
-
-  .students-page {
-    width: 100%;
-    gap: 14px;
-  }
-
-  .page-actions {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .search-box {
-    width: 100%;
-    max-width: none;
-    min-width: 0;
-  }
-
-  .add-student-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  /* STUDENT FORM */
-
-  .student-form-card {
-    width: 100%;
-    padding: 17px;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-    gap: 13px;
-  }
-
-  .form-buttons {
-    width: 100%;
-    display: flex;
-    flex-direction: column-reverse;
-    gap: 8px;
-  }
-
-  .cancel-btn,
-  .save-btn {
-    width: 100%;
-  }
-
-  /* ACTIVITY */
-
-  .activity {
-    gap: 10px;
-    padding: 12px 0;
-  }
-
-  .activity strong {
-    font-size: 12.5px;
-  }
-
-  .activity p {
-    font-size: 11.5px;
-  }
-
-  .activity span {
-    font-size: 10px;
-  }
-
-  /* COMING SOON */
-
-  .coming-soon {
-    width: 100%;
-    max-width: none;
-    margin: 20px 0 0;
-    padding: 45px 20px;
-  }
-}
-
-
-/* ---------- EXTRA SMALL MOBILE ---------- */
-
-@media (max-width: 420px) {
-
-  .sidebar {
-    padding: 10px;
-  }
-
-  .logo {
-    padding-left: 2px;
-    padding-right: 2px;
-  }
-
-  .logo-icon {
-    width: 36px;
-    height: 36px;
-  }
-
-  .logo h2 {
-    font-size: 14px;
-  }
-
-  .menu-item {
-    padding: 8px 10px;
-    font-size: 11px;
-  }
-
-  .menu-icon {
-    margin-right: 5px;
-    width: 14px;
-  }
-
-  .main-content {
-    padding: 18px 10px 40px;
-  }
-
-  .header h1 {
-    font-size: 26px;
-  }
-
-  .header p {
-    font-size: 12px;
-  }
-
-  .stat-card {
-    padding: 15px 13px;
-  }
-
-  .table-card,
-  .quick-card,
-  .activity-card,
-  .course-card,
-  .students-table-card,
-  .student-form-card {
-    padding: 14px;
-  }
-
-  .card-header h2,
-  .quick-card h2,
-  .activity-card h2,
-  .course-card h2 {
-    font-size: 15px;
-  }
-
-  .notification {
-    width: 36px;
-    height: 36px;
-  }
-
-  .avatar {
-    width: 34px;
-    height: 34px;
-  }
-}
-
-
-/* ---------- PREVENT MOBILE HORIZONTAL OVERFLOW ---------- */
-
-@media (max-width: 700px) {
-
-  .app,
-  .main-content,
-  .header,
-  .stats-grid,
-  .content-grid,
-  .bottom-grid,
-  .students-page,
-  .student-form-card,
-  .students-table-card {
-    max-width: 100%;
-  }
-
-  img,
-  svg {
-    max-width: 100%;
-  }
-
-  input,
-  select,
-  button {
-    max-width: 100%;
-  }
-}
-
-
-/* ---------- ACTION BUTTON ---------- */
-
 .action-btn {
   padding: 8px 16px;
   border: 1px solid var(--line);
@@ -1483,4 +1006,419 @@ td {
   background: var(--paper);
   border-color: var(--accent);
   color: var(--navy);
+}
+
+/* =========================================================
+   MOBILE OPTIMIZATION
+   Goal: no horizontal page shift/scroll ("screen na hile") on
+   any breakpoint. Layout reflows to a single column (or a
+   tight 2-column grid for small stat/tile cards), sidebar
+   becomes a slim icon rail then a bottom tab bar, tables stay
+   scrollable ONLY inside their own card (not the whole page).
+   ========================================================= */
+
+/* Universal safety net: nothing is ever allowed to push the
+   viewport wider than the screen. */
+.app,
+.main-content,
+.header,
+.header-right,
+.stats-grid,
+.content-grid,
+.bottom-grid,
+.table-card,
+.students-table-card,
+.quick-card,
+.activity-card,
+.course-card,
+.student-form-card,
+.form-grid,
+.page-actions {
+  max-width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .stats-grid {
+    flex-wrap: wrap;
+  }
+
+  .stat-card {
+    flex: 1 1 50%;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 1024px) {
+  .content-grid,
+  .bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tablet / small laptop: collapse sidebar to icon rail */
+@media (max-width: 900px) {
+  .app {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-height: auto;
+    flex-direction: row;
+    align-items: center;
+    padding: 10px 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .logo {
+    border-bottom: none;
+    border-right: 1px solid var(--navy-line);
+    margin-bottom: 0;
+    padding: 4px 14px 4px 4px;
+    flex-shrink: 0;
+  }
+
+  .logo span {
+    display: none;
+  }
+
+  .menu {
+    flex-direction: row;
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+  }
+
+  .menu-item {
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px 10px;
+    font-size: 10.5px;
+    white-space: nowrap;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 8px;
+  }
+
+  .menu-item.active {
+    border-left: none;
+    border-bottom: 2px solid var(--accent-2);
+  }
+
+  .menu-icon {
+    margin-right: 0;
+  }
+
+  .sidebar-bottom {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+    flex-shrink: 0;
+    margin-left: 6px;
+  }
+
+  .logout-btn {
+    width: auto;
+    white-space: nowrap;
+    padding: 8px 10px;
+  }
+
+  .main-content {
+    padding: 20px 18px 40px;
+  }
+}
+
+/* Phones: 2-column grid for stat cards & small tile rows,
+   single column for everything heavier (tables, forms) */
+@media (max-width: 600px) {
+  .main-content {
+    padding: 16px 14px 32px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .header h1 {
+    font-size: 22px;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .profile {
+    padding-left: 12px;
+  }
+
+  .profile strong,
+  .profile span {
+    max-width: 96px;
+  }
+
+  /* Total Students / Admissions / Total Collected / Pending
+     Fees — 2 boxes per row instead of 1 */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    flex-wrap: unset;
+  }
+
+  .stat-card {
+    flex: unset;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* right-column cards lose their right border, last row loses
+     its bottom border, so only the grid lines between boxes show */
+  .stat-card:nth-child(2n) {
+    border-right: none;
+  }
+
+  .stat-card:nth-last-child(-n + 2):nth-child(2n),
+  .stat-card:nth-last-child(1) {
+    border-bottom: none;
+  }
+
+  .stat-card h2 {
+    font-size: 21px;
+  }
+
+  .content-grid,
+  .bottom-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .table-card,
+  .quick-card,
+  .activity-card,
+  .course-card,
+  .student-form-card,
+  .students-table-card {
+    padding: 16px;
+  }
+
+  /* Table cards: allow inner horizontal scroll only, page itself
+     never scrolls sideways */
+  .table-card,
+  .students-table-card {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .students-table-card table {
+    min-width: 640px;
+  }
+
+  th,
+  td {
+    padding-right: 14px;
+    font-size: 12.5px;
+  }
+
+  .page-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-box {
+    max-width: none;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .add-student-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .form-buttons {
+    flex-direction: column-reverse;
+  }
+
+  .form-buttons button {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .admission-actions {
+    width: 100%;
+  }
+
+  .edit-btn,
+  .delete-btn {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+
+  .coming-soon {
+    padding: 40px 22px;
+    margin-top: 20px;
+    max-width: 100%;
+  }
+
+  .activity {
+    align-items: flex-start;
+  }
+
+  .activity span {
+    margin-top: 2px;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+  .header h1 {
+    font-size: 19px;
+  }
+
+  .stat-card h2 {
+    font-size: 19px;
+  }
+
+  .logo h2 {
+    font-size: 14.5px;
+  }
+
+  .menu-item {
+    font-size: 9.5px;
+    padding: 7px 8px;
+  }
+}
+
+/* =========================================================
+   UNIVERSAL SAFETY NET — covers Fees / Invoice / Payment /
+   Billing pages and ANY other page that reuses "card"-style,
+   "tile"-style, or table-style markup with different class
+   names (Students, Admissions, Staff, Attendance, Fees, etc).
+   Selectors below are written narrowly (whole-word style
+   suffixes like "-card", "-icon", "-tile") so they can never
+   accidentally catch an unrelated class such as .status or
+   .stat-icon, and use :has() so they work no matter what the
+   *parent* wrapper around those cards/tiles is named.
+   ========================================================= */
+
+/* Card-like containers never overflow, whatever they're called */
+.main-content > *,
+[class$="-card"],
+[class*="-card "],
+[class$="-panel"],
+[class$="-box"] {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Icon chips (avatar-style small squares/circles) must never
+   stretch to fill the row — keep them small and fixed like
+   .stat-icon/.activity-icon do */
+[class$="-icon"] {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+}
+
+/* Any table anywhere scrolls inside its own wrapper only —
+   never the page. Known tables (.table-card, .students-table-card)
+   are already handled above; this only catches unknown ones. */
+table {
+  max-width: 100%;
+}
+
+.main-content table:not(.students-table-card table):not(.table-card table) {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  /* Any stat/summary CARD (Students, Admissions, Fees, Staff,
+     Attendance overview numbers, etc.) — 2 per row like the
+     dashboard .stat-card, instead of 1 full-width row each.
+     :has() targets the *parent wrapper* automatically, whatever
+     it's called, as long as its direct children use these
+     naming conventions. */
+  :has(> [class$="-stat-card"]),
+  :has(> [class$="-summary-card"]),
+  :has(> [class*="summary-card"]) {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  [class$="-stat-card"],
+  [class$="-summary-card"],
+  [class*="summary-card"] {
+    flex: unset !important;
+    width: 100% !important;
+  }
+
+  /* A row of small metric/list tiles (Courses, Batches, Staff,
+     Attendance-style rows, Fees rows, etc.) — 2 per row on
+     mobile instead of 1 full-width row each. Each tile keeps
+     its icon fixed-size and text/arrow inline (unchanged),
+     only the wrapping layout becomes a 2-col grid. */
+  :has(> [class$="-tile"]),
+  :has(> [class$="-list-item"]) {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  [class$="-tile"],
+  [class$="-list-item"] {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 14px 14px;
+    width: 100%;
+  }
+
+  [class$="-tile"] [class$="-icon"],
+  [class$="-list-item"] [class$="-icon"] {
+    width: 34px;
+    height: 34px;
+  }
+
+  /* Pill/badge labels (status, tags) shrink to fit their text,
+     never stretch full width */
+  [class$="-badge"],
+  [class$="-tag"] {
+    display: inline-flex;
+    width: auto;
+    white-space: nowrap;
+  }
+
+  /* Action button groups (Pay Now, Download Receipt, etc.)
+     wrap and share width evenly instead of overflowing */
+  [class$="-actions"] {
+    flex-wrap: wrap;
+  }
+
+  [class$="-actions"] > button,
+  [class$="-actions"] > a {
+    flex: 1 1 auto;
+  }
 }
