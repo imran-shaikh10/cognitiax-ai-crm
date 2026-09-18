@@ -1446,3 +1446,28 @@ table {
     overflow-x: hidden;
   }
 }
+/* Compact student details shown below the payment Student selector */
+.payment-student-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 8px;
+  padding: 9px 11px;
+  border: 1px solid #e6eaf0;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.payment-student-info strong {
+  color: #344054;
+}
+
+@media (max-width: 640px) {
+  .payment-student-info {
+    gap: 5px 10px;
+    font-size: 11px;
+  }
+}

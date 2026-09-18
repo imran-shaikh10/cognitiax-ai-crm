@@ -446,14 +446,119 @@ const [editingStudent, setEditingStudent] = useState(null);
 
   /* ================= PAYMENTS DATA ================= */
 
-  const [payments, setPayments] = useState(() => {
-    const savedPayments = localStorage.getItem("payments");
-    return savedPayments ? JSON.parse(savedPayments) : [];
+  const [payments, setPayments] = useState([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(true);
+
+  const paymentFromRow = (row) => ({
+    id: row.id,
+    studentId: row.student_id,
+    student: row.student || "",
+    studentEmail: row.student_email || "",
+    course: row.course || "",
+    batch: row.batch || "",
+    amount: Number(row.amount) || 0,
+    date: row.date || "",
+    paidForMonth: row.paid_for_month || "",
+    nextInstallmentDate: row.next_installment_date || "",
+    mode: row.mode || "UPI",
+    reference: row.reference || "",
+    totalPaid: Number(row.total_paid) || 0,
+    pending: Number(row.pending) || 0,
+    createdAt: row.created_at || "",
+  });
+
+  const paymentToRow = (payment) => ({
+    student_id: payment.studentId,
+    student: payment.student || "",
+    student_email: payment.studentEmail || "",
+    course: payment.course || "",
+    batch: payment.batch || "",
+    amount: Number(payment.amount) || 0,
+    date: payment.date || "",
+    paid_for_month: payment.paidForMonth || "",
+    next_installment_date: payment.nextInstallmentDate || "",
+    mode: payment.mode || "UPI",
+    reference: payment.reference || "",
+    total_paid: Number(payment.totalPaid) || 0,
+    pending: Number(payment.pending) || 0,
   });
 
   useEffect(() => {
-    localStorage.setItem("payments", JSON.stringify(payments));
-  }, [payments]);
+    let active = true;
+
+    const loadPayments = async () => {
+      setPaymentsLoading(true);
+
+      const { data, error } = await supabase
+        .from("payments")
+        .select("id, student_id, student, student_email, course, batch, amount, date, paid_for_month, next_installment_date, mode, reference, total_paid, pending, created_at")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Payments load error:", error);
+        if (active) {
+          setPayments([]);
+          setPaymentsLoading(false);
+          alert(`Could not load payments: ${error.message}`);
+        }
+        return;
+      }
+
+      let rows = data || [];
+
+      // One-time migration of existing browser payments.
+      if (rows.length === 0 && !localStorage.getItem("payments_supabase_migrated")) {
+        try {
+          const savedPayments = JSON.parse(localStorage.getItem("payments") || "[]");
+          const validStudents = students;
+
+          const migrationRows = savedPayments
+            .map((payment) => {
+              const matchedStudent = validStudents.find(
+                (student) => String(student.id) === String(payment.studentId) ||
+                  (student.name === payment.student && student.phone === payment.phone)
+              );
+              if (!matchedStudent) return null;
+
+              return paymentToRow({
+                ...payment,
+                studentId: matchedStudent.id,
+                student: matchedStudent.name,
+                studentEmail: matchedStudent.email || payment.studentEmail || "",
+                course: matchedStudent.course || payment.course || "",
+                batch: matchedStudent.batch || payment.batch || "",
+              });
+            })
+            .filter(Boolean);
+
+          if (migrationRows.length) {
+            const { data: migrated, error: migrationError } = await supabase
+              .from("payments")
+              .insert(migrationRows)
+              .select("id, student_id, student, student_email, course, batch, amount, date, paid_for_month, next_installment_date, mode, reference, total_paid, pending, created_at");
+
+            if (migrationError) {
+              console.error("Payments migration error:", migrationError);
+            } else {
+              rows = migrated || [];
+            }
+          }
+
+          localStorage.setItem("payments_supabase_migrated", "true");
+        } catch (migrationError) {
+          console.error("Payments local migration error:", migrationError);
+        }
+      }
+
+      if (active) {
+        setPayments(rows.map(paymentFromRow));
+        setPaymentsLoading(false);
+      }
+    };
+
+    loadPayments();
+    return () => { active = false; };
+  }, [students.length]);
 
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
@@ -905,6 +1010,10 @@ const [editingStudent, setEditingStudent] = useState(null);
   const getCourseBatches = (courseName) =>
     batches.filter((batch) => batch.course === courseName);
 
+  const selectedPaymentStudent = students.find(
+    (student) => String(student.id) === String(newPayment.studentId)
+  );
+
   /* ================= MENU ================= */
 
   const menuItems = [
@@ -1118,7 +1227,19 @@ const handleAddStudent = async (e) => {
     setShowPaymentForm(true);
   };
 
-  const handleAddPayment = (e) => {
+  const updateStudentPaidFeeInSupabase = async (studentId, paidTotal) => {
+    const { error } = await supabase
+      .from("students")
+      .update({ paid_fee: formatMoney(paidTotal), updated_at: new Date().toISOString() })
+      .eq("id", studentId);
+
+    if (error) {
+      console.error("Student fee update error:", error);
+      throw error;
+    }
+  };
+
+  const handleAddPayment = async (e) => {
     e.preventDefault();
 
     const student = students.find(
@@ -1133,47 +1254,82 @@ const handleAddStudent = async (e) => {
 
     if (editingPayment) {
       const oldAmount = parseMoney(editingPayment.amount);
-      const maxAllowed = getStudentPending(student) + oldAmount;
+      const oldStudent = students.find((item) => String(item.id) === String(editingPayment.studentId));
+      const sameStudent = oldStudent && String(oldStudent.id) === String(student.id);
 
-      if (amount > maxAllowed) {
-        alert(`Payment cannot be more than pending fee. Maximum: ${formatMoney(maxAllowed)}`);
+      if (sameStudent) {
+        const maxAllowed = getStudentPending(student) + oldAmount;
+        if (amount > maxAllowed) {
+          alert(`Payment cannot be more than pending fee. Maximum: ${formatMoney(maxAllowed)}`);
+          return;
+        }
+      } else {
+        const newStudentPending = getStudentPending(student);
+        if (amount > newStudentPending) {
+          alert(`Payment cannot be more than pending fee. Maximum: ${formatMoney(newStudentPending)}`);
+          return;
+        }
+      }
+
+      const oldStudentPaid = oldStudent ? parseMoney(oldStudent.paidFee) : 0;
+      const newStudentPaidBefore = parseMoney(student.paidFee);
+      const updatedOldStudentPaid = sameStudent
+        ? Math.max(0, oldStudentPaid + amount - oldAmount)
+        : Math.max(0, oldStudentPaid - oldAmount);
+      const updatedNewStudentPaid = sameStudent
+        ? updatedOldStudentPaid
+        : Math.max(0, newStudentPaidBefore + amount);
+      const updatedTotalPaid = updatedNewStudentPaid;
+      const updatedPending = Math.max(0, parseMoney(student.fee) - updatedTotalPaid);
+
+      const updatedPayment = {
+        ...editingPayment,
+        studentId: student.id,
+        student: student.name,
+        studentEmail: student.email || editingPayment.studentEmail || "",
+        course: student.course,
+        batch: student.batch,
+        amount,
+        date: newPayment.date,
+        paidForMonth: newPayment.paidForMonth,
+        nextInstallmentDate: newPayment.nextInstallmentDate,
+        mode: newPayment.mode,
+        reference: newPayment.reference,
+        totalPaid: updatedTotalPaid,
+        pending: updatedPending,
+      };
+
+      const { data, error } = await supabase
+        .from("payments")
+        .update(paymentToRow(updatedPayment))
+        .eq("id", editingPayment.id)
+        .select("id, student_id, student, student_email, course, batch, amount, date, paid_for_month, next_installment_date, mode, reference, total_paid, pending, created_at")
+        .single();
+
+      if (error) {
+        console.error("Payment update error:", error);
+        alert(`Could not update payment: ${error.message}`);
         return;
       }
 
-      const difference = amount - oldAmount;
-      const updatedTotalPaid = Math.max(0, parseMoney(student.paidFee) + difference);
-      const updatedPending = Math.max(0, parseMoney(student.fee) - updatedTotalPaid);
+      try {
+        if (sameStudent) {
+          await updateStudentPaidFeeInSupabase(student.id, updatedTotalPaid);
+        } else {
+          if (oldStudent) await updateStudentPaidFeeInSupabase(oldStudent.id, updatedOldStudentPaid);
+          await updateStudentPaidFeeInSupabase(student.id, updatedNewStudentPaid);
+        }
+      } catch (error) {
+        alert(`Payment saved, but student fee balance could not be updated: ${error.message}`);
+      }
 
-      setPayments(
-        payments.map((payment) =>
-          payment.id === editingPayment.id
-            ? {
-                ...payment,
-                studentId: student.id,
-                student: student.name,
-                studentEmail: student.email || payment.studentEmail || "",
-                course: student.course,
-                batch: student.batch,
-                amount,
-                date: newPayment.date,
-                paidForMonth: newPayment.paidForMonth,
-                nextInstallmentDate: newPayment.nextInstallmentDate,
-                mode: newPayment.mode,
-                reference: newPayment.reference,
-                totalPaid: updatedTotalPaid,
-                pending: updatedPending,
-              }
-            : payment
-        )
-      );
-
-      setStudents(
-        students.map((item) =>
-          item.id === student.id
-            ? { ...item, paidFee: formatMoney(updatedTotalPaid) }
-            : item
-        )
-      );
+      setPayments((items) => items.map((payment) => payment.id === editingPayment.id ? paymentFromRow(data) : payment));
+      setStudents((items) => items.map((item) => {
+        if (sameStudent && item.id === student.id) return { ...item, paidFee: formatMoney(updatedTotalPaid) };
+        if (!sameStudent && oldStudent && item.id === oldStudent.id) return { ...item, paidFee: formatMoney(updatedOldStudentPaid) };
+        if (!sameStudent && item.id === student.id) return { ...item, paidFee: formatMoney(updatedNewStudentPaid) };
+        return item;
+      }));
 
       setEditingPayment(null);
     } else {
@@ -1187,7 +1343,6 @@ const handleAddStudent = async (e) => {
       const newTotalPaid = parseMoney(student.paidFee) + amount;
       const newPending = Math.max(0, parseMoney(student.fee) - newTotalPaid);
       const payment = {
-        id: Date.now(),
         studentId: student.id,
         student: student.name,
         studentEmail: student.email || "",
@@ -1203,15 +1358,28 @@ const handleAddStudent = async (e) => {
         pending: newPending,
       };
 
-      setPayments([payment, ...payments]);
+      const { data, error } = await supabase
+        .from("payments")
+        .insert(paymentToRow(payment))
+        .select("id, student_id, student, student_email, course, batch, amount, date, paid_for_month, next_installment_date, mode, reference, total_paid, pending, created_at")
+        .single();
 
-      setStudents(
-        students.map((item) =>
-          item.id === student.id
-            ? { ...item, paidFee: formatMoney(newTotalPaid) }
-            : item
-        )
-      );
+      if (error) {
+        console.error("Payment insert error:", error);
+        alert(`Could not add payment: ${error.message}`);
+        return;
+      }
+
+      try {
+        await updateStudentPaidFeeInSupabase(student.id, newTotalPaid);
+      } catch (error) {
+        alert(`Payment saved, but student fee balance could not be updated: ${error.message}`);
+      }
+
+      setPayments((items) => [paymentFromRow(data), ...items]);
+      setStudents((items) => items.map((item) =>
+        item.id === student.id ? { ...item, paidFee: formatMoney(newTotalPaid) } : item
+      ));
     }
 
     setNewPayment({
@@ -1240,17 +1408,39 @@ const handleAddStudent = async (e) => {
     setShowPaymentForm(true);
   };
 
-  const handleDeletePayment = (payment) => {
+  const handleDeletePayment = async (payment) => {
     if (!window.confirm(`Delete payment of ${formatMoney(payment.amount)} from ${payment.student}?`)) return;
 
-    setPayments(payments.filter((item) => item.id !== payment.id));
-    setStudents(
-      students.map((student) =>
-        student.id === payment.studentId
-          ? { ...student, paidFee: formatMoney(Math.max(0, parseMoney(student.paidFee) - parseMoney(payment.amount))) }
-          : student
-      )
-    );
+    const student = students.find((item) => String(item.id) === String(payment.studentId));
+    const newPaid = student
+      ? Math.max(0, parseMoney(student.paidFee) - parseMoney(payment.amount))
+      : null;
+
+    const { error } = await supabase
+      .from("payments")
+      .delete()
+      .eq("id", payment.id);
+
+    if (error) {
+      console.error("Payment delete error:", error);
+      alert(`Could not delete payment: ${error.message}`);
+      return;
+    }
+
+    if (student && newPaid !== null) {
+      try {
+        await updateStudentPaidFeeInSupabase(student.id, newPaid);
+      } catch (error) {
+        alert(`Payment deleted, but student fee balance could not be updated: ${error.message}`);
+      }
+    }
+
+    setPayments((items) => items.filter((item) => item.id !== payment.id));
+    if (student && newPaid !== null) {
+      setStudents((items) => items.map((item) =>
+        item.id === student.id ? { ...item, paidFee: formatMoney(newPaid) } : item
+      ));
+    }
   };
 
 
@@ -1295,7 +1485,11 @@ const handleAddStudent = async (e) => {
   const getLatestStudentPayment = (studentId) => {
     return [...payments]
       .filter((payment) => String(payment.studentId) === String(studentId))
-      .sort((a, b) => Number(b.id) - Number(a.id))[0] || null;
+      .sort((a, b) => {
+        const aTime = new Date(a.createdAt || `${a.date || ""}T00:00:00`).getTime() || 0;
+        const bTime = new Date(b.createdAt || `${b.date || ""}T00:00:00`).getTime() || 0;
+        return bTime - aTime;
+      })[0] || null;
   };
 
   const formatWhatsAppDate = (value) => {
@@ -4071,10 +4265,17 @@ Thank you. 🙏
                         <option value="">Select Student</option>
                         {students.map((student) => (
                           <option key={student.id} value={student.id}>
-                            {student.name} — {student.course || "No Course"} — {student.batch || "No Batch"} — Pending {formatMoney(getStudentPending(student))}
+                            {student.name}
                           </option>
                         ))}
                       </select>
+                      {selectedPaymentStudent && (
+                        <div className="payment-student-info">
+                          <span><strong>Course:</strong> {selectedPaymentStudent.course || "—"}</span>
+                          <span><strong>Batch:</strong> {selectedPaymentStudent.batch || "—"}</span>
+                          <span><strong>Pending:</strong> {formatMoney(getStudentPending(selectedPaymentStudent))}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="form-group">
                       <label>Payment Amount *</label>
@@ -4539,10 +4740,17 @@ Thank you. 🙏
                             <option value="">Select Student</option>
                             {students.map((student) => (
                               <option key={student.id} value={student.id}>
-                                {student.name} - {student.course || "No Course"} - {student.batch || "No Batch"} - Pending {formatMoney(getStudentPending(student))}
+                                {student.name}
                               </option>
                             ))}
                           </select>
+                          {selectedPaymentStudent && (
+                            <div className="payment-student-info">
+                              <span><strong>Course:</strong> {selectedPaymentStudent.course || "—"}</span>
+                              <span><strong>Batch:</strong> {selectedPaymentStudent.batch || "—"}</span>
+                              <span><strong>Pending:</strong> {formatMoney(getStudentPending(selectedPaymentStudent))}</span>
+                            </div>
+                          )}
                         </div>
                         <div className="form-group">
                           <label>Payment Amount *</label>
