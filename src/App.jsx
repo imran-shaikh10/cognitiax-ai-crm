@@ -619,21 +619,222 @@ const [editingStudent, setEditingStudent] = useState(null);
 
   /* ================= COURSES & BATCHES ================= */
 
-  const [courses, setCourses] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("courses")) || [];
-    } catch {
-      return [];
-    }
+  const [courses, setCourses] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+
+  const courseFromRow = (row) => ({
+    id: row.id,
+    name: row.course_name || "",
+    description: row.description || "",
+    duration: row.duration || "",
+    fee: row.total_fee ?? "",
+    mode: row.mode || "Offline",
+    status: row.status || "Active",
   });
 
-  const [batches, setBatches] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("batches")) || [];
-    } catch {
-      return [];
-    }
+  const courseToRow = (course) => ({
+    course_name: course.name || "",
+    description: course.description || "",
+    duration: course.duration || "",
+    total_fee: Number(course.fee) || 0,
+    mode: course.mode || "Offline",
+    status: course.status || "Active",
   });
+
+  useEffect(() => {
+    let active = true;
+
+    const loadCourses = async () => {
+      setCoursesLoading(true);
+
+      const { data, error } = await supabase
+        .from("courses")
+        .select("id, course_name, description, duration, total_fee, mode, status")
+        .order("course_name", { ascending: true });
+
+      if (error) {
+        console.error("Courses load error:", error);
+        if (active) {
+          setCoursesLoading(false);
+          alert(`Could not load courses from Supabase: ${error.message}`);
+        }
+        return;
+      }
+
+      let rows = data || [];
+
+      // One-time migration: import existing browser courses if Supabase is empty.
+      if (rows.length === 0 && !localStorage.getItem("courses_supabase_migrated")) {
+        try {
+          const savedCourses = JSON.parse(localStorage.getItem("courses") || "[]");
+
+          if (Array.isArray(savedCourses) && savedCourses.length > 0) {
+            const migrationRows = savedCourses
+              .filter((course) => course?.name?.trim())
+              .map(courseToRow);
+
+            if (migrationRows.length) {
+              const { data: migrated, error: migrationError } = await supabase
+                .from("courses")
+                .insert(migrationRows)
+                .select("id, course_name, description, duration, total_fee, mode, status");
+
+              if (migrationError) {
+                console.error("Courses migration error:", migrationError);
+                alert(`Courses table is ready, but existing local courses could not be imported: ${migrationError.message}`);
+              } else {
+                rows = migrated || [];
+              }
+            }
+          }
+
+          localStorage.setItem("courses_supabase_migrated", "true");
+        } catch (migrationError) {
+          console.error("Courses local migration error:", migrationError);
+        }
+      }
+
+      if (active) {
+        setCourses(rows.map(courseFromRow));
+        setCoursesLoading(false);
+      }
+    };
+
+    loadCourses();
+    return () => { active = false; };
+  }, []);
+
+  const [batches, setBatches] = useState([]);
+  const [batchesLoading, setBatchesLoading] = useState(true);
+
+  const batchFromRow = (row, courseRows = []) => {
+    const linkedCourse = courseRows.find((course) => course.id === row.course_id);
+
+    return {
+      id: row.id,
+      name: row.batch_name || "",
+      course: linkedCourse?.course_name || row.course_name || "",
+      courseId: row.course_id || "",
+      trainer: row.trainer_name || "",
+      trainerId: row.trainer_id || "",
+      timing: row.class_time || "",
+      startDate: row.start_date || "",
+      endDate: row.end_date || "",
+      mode: row.mode || "Offline",
+      status: row.status || "Active",
+      whatsappGroupLink: row.default_zoom_link || "",
+      maxStudents: row.max_students ?? "",
+      classDays: row.class_days || "",
+    };
+  };
+
+  const batchToRow = (batch, courseRows = []) => {
+    const linkedCourse = courseRows.find(
+      (course) =>
+        course.id === batch.courseId ||
+        course.course_name?.trim().toLowerCase() === batch.course?.trim().toLowerCase()
+    );
+
+    return {
+      batch_name: batch.name?.trim() || "",
+      course_id: linkedCourse?.id || batch.courseId || null,
+      trainer_id: batch.trainerId || null,
+      trainer_name: batch.trainer?.trim() || null,
+      start_date: batch.startDate || null,
+      end_date: batch.endDate || null,
+      max_students:
+        batch.maxStudents === "" || batch.maxStudents == null
+          ? null
+          : Number(batch.maxStudents) || null,
+      class_days: batch.classDays || null,
+      class_time: batch.timing || null,
+      default_zoom_link: batch.whatsappGroupLink || null,
+      mode: batch.mode || "Offline",
+      status: batch.status || "Active",
+    };
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    const loadBatches = async () => {
+      setBatchesLoading(true);
+
+      const [{ data: batchRows, error: batchError }, { data: courseRows, error: courseError }] =
+        await Promise.all([
+          supabase
+            .from("batches")
+            .select(
+              "id, batch_name, course_id, trainer_id, trainer_name, start_date, end_date, max_students, class_days, class_time, default_zoom_link, mode, status"
+            )
+            .order("start_date", { ascending: true }),
+          supabase
+            .from("courses")
+            .select("id, course_name")
+            .order("course_name", { ascending: true }),
+        ]);
+
+      if (batchError) {
+        console.error("Batches load error:", batchError);
+        if (active) {
+          setBatchesLoading(false);
+          alert(`Could not load batches from Supabase: ${batchError.message}`);
+        }
+        return;
+      }
+
+      if (courseError) {
+        console.error("Batch course lookup error:", courseError);
+      }
+
+      let rows = batchRows || [];
+      const coursesForLookup = courseRows || [];
+
+      // One-time migration of existing browser batches.
+      if (rows.length === 0 && !localStorage.getItem("batches_supabase_migrated")) {
+        try {
+          const savedBatches = JSON.parse(localStorage.getItem("batches") || "[]");
+
+          if (Array.isArray(savedBatches) && savedBatches.length > 0) {
+            const migrationRows = savedBatches
+              .filter((batch) => batch?.name?.trim())
+              .map((batch) => batchToRow(batch, coursesForLookup));
+
+            if (migrationRows.length) {
+              const { data: migrated, error: migrationError } = await supabase
+                .from("batches")
+                .insert(migrationRows)
+                .select(
+                  "id, batch_name, course_id, trainer_id, trainer_name, start_date, end_date, max_students, class_days, class_time, default_zoom_link, mode, status"
+                );
+
+              if (migrationError) {
+                console.error("Batches migration error:", migrationError);
+                alert(`Batches table is ready, but existing local batches could not be imported: ${migrationError.message}`);
+              } else {
+                rows = migrated || [];
+              }
+            }
+          }
+
+          localStorage.setItem("batches_supabase_migrated", "true");
+        } catch (migrationError) {
+          console.error("Batches local migration error:", migrationError);
+        }
+      }
+
+      if (active) {
+        setBatches(rows.map((row) => batchFromRow(row, coursesForLookup)));
+        setBatchesLoading(false);
+      }
+    };
+
+    loadBatches();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   /* ================= STAFF DATA ================= */
 
@@ -709,13 +910,9 @@ const [editingStudent, setEditingStudent] = useState(null);
     whatsappGroupLink: "",
   });
 
-  useEffect(() => {
-    localStorage.setItem("courses", JSON.stringify(courses));
-  }, [courses]);
 
-  useEffect(() => {
-    localStorage.setItem("batches", JSON.stringify(batches));
-  }, [batches]);
+
+
 
   useEffect(() => {
     localStorage.setItem("staff", JSON.stringify(staff));
@@ -725,7 +922,7 @@ const [editingStudent, setEditingStudent] = useState(null);
     localStorage.setItem("staffAttendance", JSON.stringify(attendanceRecords));
   }, [attendanceRecords]);
 
-  const handleAddCourse = (e) => {
+  const handleAddCourse = async (e) => {
     e.preventDefault();
 
     const courseName = newCourse.name.trim();
@@ -744,17 +941,63 @@ const [editingStudent, setEditingStudent] = useState(null);
       return;
     }
 
+    const courseData = {
+      ...newCourse,
+      name: courseName,
+      fee: Number(newCourse.fee) || 0,
+    };
+
     if (editingCourse) {
       const oldName = editingCourse.name;
-      setCourses(courses.map((course) =>
-        course.id === editingCourse.id ? { ...course, ...newCourse, name: courseName } : course
-      ));
 
-      // Keep all linked records connected when a course is renamed.
+      const { data, error } = await supabase
+        .from("courses")
+        .update(courseToRow(courseData))
+        .eq("id", editingCourse.id)
+        .select("id, course_name, description, duration, total_fee, mode, status")
+        .single();
+
+      if (error) {
+        console.error("Course update error:", error);
+        alert(`Could not update course: ${error.message}`);
+        return;
+      }
+
+      setCourses((items) =>
+        items.map((course) =>
+          course.id === editingCourse.id ? courseFromRow(data) : course
+        )
+      );
+
+      // Keep linked Supabase records consistent when the course is renamed.
       if (oldName !== courseName) {
-        setBatches((items) => items.map((batch) =>
-          batch.course === oldName ? { ...batch, course: courseName } : batch
-        ));
+        const { error: studentUpdateError } = await supabase
+          .from("students")
+          .update({ course: courseName })
+          .eq("course", oldName);
+
+        if (studentUpdateError) {
+          console.error("Linked students course update error:", studentUpdateError);
+        }
+
+        const { error: admissionUpdateError } = await supabase
+          .from("admissions")
+          .update({ course: courseName })
+          .eq("course", oldName);
+
+        if (admissionUpdateError) {
+          console.error("Linked admissions course update error:", admissionUpdateError);
+        }
+
+        const { error: paymentUpdateError } = await supabase
+          .from("payments")
+          .update({ course: courseName })
+          .eq("course", oldName);
+
+        if (paymentUpdateError) {
+          console.error("Linked payments course update error:", paymentUpdateError);
+        }
+
         setStudents((items) => items.map((student) =>
           student.course === oldName ? { ...student, course: courseName } : student
         ));
@@ -766,10 +1009,29 @@ const [editingStudent, setEditingStudent] = useState(null);
         ));
       }
     } else {
-      setCourses([...courses, { id: Date.now(), ...newCourse, name: courseName }]);
+      const { data, error } = await supabase
+        .from("courses")
+        .insert(courseToRow(courseData))
+        .select("id, course_name, description, duration, total_fee, mode, status")
+        .single();
+
+      if (error) {
+        console.error("Course insert error:", error);
+        alert(`Could not add course: ${error.message}`);
+        return;
+      }
+
+      setCourses((items) => [...items, courseFromRow(data)]);
     }
 
-    setNewCourse({ name: "", duration: "", fee: "", mode: "Offline", description: "", status: "Active" });
+    setNewCourse({
+      name: "",
+      duration: "",
+      fee: "",
+      mode: "Offline",
+      description: "",
+      status: "Active",
+    });
     setEditingCourse(null);
     setShowCourseForm(false);
   };
@@ -778,7 +1040,7 @@ const [editingStudent, setEditingStudent] = useState(null);
     setNewCourse({
       name: course.name || "",
       duration: course.duration || "",
-      fee: course.fee || "",
+      fee: course.fee ?? "",
       mode: course.mode || "Offline",
       description: course.description || "",
       status: course.status || "Active",
@@ -787,7 +1049,7 @@ const [editingStudent, setEditingStudent] = useState(null);
     setShowCourseForm(true);
   };
 
-  const handleDeleteCourse = (course) => {
+  const handleDeleteCourse = async (course) => {
     const linkedBatches = batches.filter((batch) => batch.course === course.name);
     const linkedStudents = students.filter((student) => student.course === course.name);
 
@@ -799,7 +1061,19 @@ const [editingStudent, setEditingStudent] = useState(null);
     }
 
     if (!window.confirm(`Delete ${course.name}?`)) return;
-    setCourses(courses.filter((item) => item.id !== course.id));
+
+    const { error } = await supabase
+      .from("courses")
+      .delete()
+      .eq("id", course.id);
+
+    if (error) {
+      console.error("Course delete error:", error);
+      alert(`Could not delete course: ${error.message}`);
+      return;
+    }
+
+    setCourses((items) => items.filter((item) => item.id !== course.id));
   };
 
   const handleAddStaff = (e) => {
@@ -963,22 +1237,128 @@ const [editingStudent, setEditingStudent] = useState(null);
     return matchesSearch && matchesStatus && matchesRole;
   });
 
-  const handleAddBatch = (e) => {
+  const handleAddBatch = async (e) => {
     e.preventDefault();
-    if (!newBatch.name || !newBatch.course || !newBatch.startDate) {
+
+    const batchName = newBatch.name.trim();
+
+    if (!batchName || !newBatch.course || !newBatch.startDate) {
       alert("Please fill Batch Name, Course and Start Date!");
       return;
     }
 
-    if (editingBatch) {
-      setBatches(batches.map((batch) =>
-        batch.id === editingBatch.id ? { ...batch, ...newBatch } : batch
-      ));
-    } else {
-      setBatches([...batches, { id: Date.now(), ...newBatch }]);
+    const duplicate = batches.some(
+      (batch) =>
+        batch.name?.trim().toLowerCase() === batchName.toLowerCase() &&
+        batch.id !== editingBatch?.id
+    );
+
+    if (duplicate) {
+      alert("A batch with this name already exists!");
+      return;
     }
 
-    setNewBatch({ name: "", course: "", trainer: "", timing: "", startDate: "", endDate: "", mode: "Offline", status: "Active", whatsappGroupLink: "" });
+    // Resolve course_id from the Supabase courses table.
+    const { data: courseRows, error: courseError } = await supabase
+      .from("courses")
+      .select("id, course_name");
+
+    if (courseError) {
+      console.error("Course lookup for batch failed:", courseError);
+      alert(`Could not load courses: ${courseError.message}`);
+      return;
+    }
+
+    const selectedCourse = (courseRows || []).find(
+      (course) =>
+        course.id === newBatch.course ||
+        course.course_name?.trim().toLowerCase() === newBatch.course.trim().toLowerCase()
+    );
+
+    if (!selectedCourse) {
+      alert("Selected course was not found in Supabase. Please select a valid course.");
+      return;
+    }
+
+    const batchData = {
+      ...newBatch,
+      name: batchName,
+      course: selectedCourse.course_name,
+      courseId: selectedCourse.id,
+    };
+
+    if (editingBatch) {
+      const { data, error } = await supabase
+        .from("batches")
+        .update(batchToRow(batchData, courseRows))
+        .eq("id", editingBatch.id)
+        .select(
+          "id, batch_name, course_id, trainer_id, trainer_name, start_date, end_date, max_students, class_days, class_time, default_zoom_link, mode, status"
+        )
+        .single();
+
+      if (error) {
+        console.error("Batch update error:", error);
+        alert(`Could not update batch: ${error.message}`);
+        return;
+      }
+
+      setBatches((items) =>
+        items.map((batch) =>
+          batch.id === editingBatch.id
+            ? batchFromRow(data, courseRows)
+            : batch
+        )
+      );
+
+      // Keep student records connected when a batch is renamed.
+      if (editingBatch.name !== batchName) {
+        const { error: studentUpdateError } = await supabase
+          .from("students")
+          .update({ batch: batchName })
+          .eq("batch", editingBatch.name);
+
+        if (studentUpdateError) {
+          console.error("Linked students batch update error:", studentUpdateError);
+        }
+
+        setStudents((items) =>
+          items.map((student) =>
+            student.batch === editingBatch.name
+              ? { ...student, batch: batchName }
+              : student
+          )
+        );
+      }
+    } else {
+      const { data, error } = await supabase
+        .from("batches")
+        .insert(batchToRow(batchData, courseRows))
+        .select(
+          "id, batch_name, course_id, trainer_id, trainer_name, start_date, end_date, max_students, class_days, class_time, default_zoom_link, mode, status"
+        )
+        .single();
+
+      if (error) {
+        console.error("Batch insert error:", error);
+        alert(`Could not add batch: ${error.message}`);
+        return;
+      }
+
+      setBatches((items) => [...items, batchFromRow(data, courseRows)]);
+    }
+
+    setNewBatch({
+      name: "",
+      course: "",
+      trainer: "",
+      timing: "",
+      startDate: "",
+      endDate: "",
+      mode: "Offline",
+      status: "Active",
+      whatsappGroupLink: "",
+    });
     setEditingBatch(null);
     setShowBatchForm(false);
   };
@@ -999,9 +1379,32 @@ const [editingStudent, setEditingStudent] = useState(null);
     setShowBatchForm(true);
   };
 
-  const handleDeleteBatch = (batch) => {
+  const handleDeleteBatch = async (batch) => {
+    const linkedStudents = students.filter(
+      (student) => student.batch === batch.name
+    );
+
+    if (linkedStudents.length > 0) {
+      alert(
+        `Cannot delete ${batch.name} because ${linkedStudents.length} student(s) are linked to this batch. Move those students first.`
+      );
+      return;
+    }
+
     if (!window.confirm(`Delete ${batch.name}?`)) return;
-    setBatches(batches.filter((item) => item.id !== batch.id));
+
+    const { error } = await supabase
+      .from("batches")
+      .delete()
+      .eq("id", batch.id);
+
+    if (error) {
+      console.error("Batch delete error:", error);
+      alert(`Could not delete batch: ${error.message}`);
+      return;
+    }
+
+    setBatches((items) => items.filter((item) => item.id !== batch.id));
   };
 
   const getBatchStudents = (batchName) =>
