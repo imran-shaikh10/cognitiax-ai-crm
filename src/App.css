@@ -1422,3 +1422,27 @@ table {
     flex: 1 1 auto;
   }
 }
+
+
+/* =========================================================
+   SIDEBAR HEIGHT FIX
+   Keeps the dark sidebar background full-height on desktop.
+   Mobile/tablet behavior remains unchanged.
+   ========================================================= */
+
+@media (min-width: 901px) {
+  .app {
+    min-height: 100vh;
+    align-items: stretch;
+  }
+
+  .sidebar {
+    height: 100vh;
+    min-height: 100vh;
+    align-self: flex-start;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}

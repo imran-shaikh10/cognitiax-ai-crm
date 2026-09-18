@@ -274,6 +274,7 @@ const [editingStudent, setEditingStudent] = useState(null);
   });
 
   const studentToRow = (student) => ({
+    id: Number(student.id),
     full_name: student.name || "",
     phone: student.phone || "",
     email: student.email || "",
@@ -314,9 +315,8 @@ const [editingStudent, setEditingStudent] = useState(null);
         if (savedStudents) {
           const localStudents = JSON.parse(savedStudents);
           if (Array.isArray(localStudents) && localStudents.length > 0) {
-            const rows = localStudents.map((student) => ({
-              id: crypto.randomUUID(),
-              ...studentToRow(student),
+            const rows = localStudents.map((student, index) => ({
+              ...studentToRow({ ...student, id: Number(student.id) || Date.now() + index }),
             }));
 
             const { data: imported, error: importError } = await supabase
@@ -359,43 +359,80 @@ const [editingStudent, setEditingStudent] = useState(null);
 
   /* ================= ADMISSIONS DATA ================= */
 
-  const [admissions, setAdmissions] = useState(() => {
-  const savedAdmissions = localStorage.getItem("admissions");
+  const [admissions, setAdmissions] = useState([]);
+  const [admissionsLoading, setAdmissionsLoading] = useState(true);
 
-  if (savedAdmissions) {
-    return JSON.parse(savedAdmissions);
-  }
+  const admissionFromRow = (row) => ({
+    id: row.id,
+    student: row.student || "",
+    course: row.course || "",
+    batch: row.batch || "",
+    date: row.date || "",
+    status: row.status || "Confirmed",
+  });
 
-  return [
-    {
-      id: 1,
-      student: "Rahul Sharma",
-      course: "AI & Data Science",
-      batch: "AI-01",
-      date: "12 Sep 2026",
-      status: "Confirmed",
-    },
-    {
-      id: 2,
-      student: "Priya Singh",
-      course: "Data Analytics",
-      batch: "DA-01",
-      date: "10 Sep 2026",
-      status: "Confirmed",
-    },
-    {
-      id: 3,
-      student: "Aman Kumar",
-      course: "Digital Marketing",
-      batch: "DM-01",
-      date: "08 Sep 2026",
-      status: "Pending",
-    },
-  ];
-});
-useEffect(() => {
-  localStorage.setItem("admissions", JSON.stringify(admissions));
-}, [admissions]);
+  const admissionToRow = (admission) => ({
+    student: admission.student || "",
+    course: admission.course || "",
+    batch: admission.batch || "",
+    date: admission.date || "",
+    status: admission.status || "Confirmed",
+  });
+
+  useEffect(() => {
+    let active = true;
+
+    const loadAdmissions = async () => {
+      const { data, error } = await supabase
+        .from("admissions")
+        .select("id, student, course, batch, date, status")
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Admissions load error:", error);
+        if (active) {
+          setAdmissionsLoading(false);
+          alert(`Could not load admissions from Supabase: ${error.message}`);
+        }
+        return;
+      }
+
+      if (data && data.length > 0) {
+        if (active) setAdmissions(data.map(admissionFromRow));
+        if (active) setAdmissionsLoading(false);
+        return;
+      }
+
+      // First-time migration: import the current browser admissions once.
+      try {
+        const savedAdmissions = localStorage.getItem("admissions");
+        if (savedAdmissions) {
+          const localAdmissions = JSON.parse(savedAdmissions);
+          if (Array.isArray(localAdmissions) && localAdmissions.length > 0) {
+            const rows = localAdmissions.map(admissionToRow);
+            const { data: imported, error: importError } = await supabase
+              .from("admissions")
+              .insert(rows)
+              .select("id, student, course, batch, date, status");
+
+            if (importError) {
+              console.error("Admissions migration error:", importError);
+              alert(`Admissions table is ready, but existing local admissions could not be imported: ${importError.message}`);
+            } else if (active) {
+              setAdmissions((imported || []).map(admissionFromRow));
+            }
+          }
+        }
+      } catch (migrationError) {
+        console.error("Admissions migration error:", migrationError);
+      }
+
+      if (active) setAdmissionsLoading(false);
+    };
+
+    loadAdmissions();
+    return () => { active = false; };
+  }, []);
 
 
   /* ================= PAYMENTS DATA ================= */
@@ -963,7 +1000,7 @@ const handleAddStudent = async (e) => {
   if (editingStudent) {
     const { data, error } = await supabase
       .from("students")
-      .update(studentToRow(studentData))
+      .update(studentToRow({ ...studentData, id: editingStudent.id }))
       .eq("id", editingStudent.id)
       .select("id, full_name, phone, email, course, batch, status, fee, paid_fee")
       .single();
@@ -980,12 +1017,10 @@ const handleAddStudent = async (e) => {
       )
     );
   } else {
+    const newId = Date.now();
     const { data, error } = await supabase
       .from("students")
-      .insert({
-        id: crypto.randomUUID(),
-        ...studentToRow(studentData),
-      })
+      .insert(studentToRow({ ...studentData, id: newId }))
       .select("id, full_name, phone, email, course, batch, status, fee, paid_fee")
       .single();
 
@@ -1559,7 +1594,7 @@ Thank you. 🙏
 
   /* ================= ADD ADMISSION ================= */
 
-  const handleAddAdmission = (e) => {
+  const handleAddAdmission = async (e) => {
 
     e.preventDefault();
 
@@ -1573,40 +1608,52 @@ Thank you. 🙏
     }
 
     const admission = {
-      id: admissions.length + 1,
-
-      student:
-        newAdmission.student,
-
-      course:
-        newAdmission.course,
-
-      batch:
-        newAdmission.batch,
-
-      date:
-        new Date().toLocaleDateString(
-          "en-GB",
-          {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          }
-        ),
-
-      status:
-        newAdmission.status,
+      student: newAdmission.student,
+      course: newAdmission.course,
+      batch: newAdmission.batch,
+      date: new Date().toLocaleDateString(
+        "en-GB",
+        {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }
+      ),
+      status: newAdmission.status,
     };
 
     if (editingAdmission) {
-      setAdmissions(
-        admissions.map((item) =>
-          item.id === editingAdmission.id ? { ...item, ...admission } : item
-        )
+      const { data, error } = await supabase
+        .from("admissions")
+        .update(admissionToRow(admission))
+        .eq("id", editingAdmission.id)
+        .select("id, student, course, batch, date, status")
+        .single();
+
+      if (error) {
+        console.error("Admission update error:", error);
+        alert(`Could not update admission: ${error.message}`);
+        return;
+      }
+
+      setAdmissions((items) =>
+        items.map((item) => item.id === editingAdmission.id ? admissionFromRow(data) : item)
       );
       setEditingAdmission(null);
     } else {
-      setAdmissions([...admissions, admission]);
+      const { data, error } = await supabase
+        .from("admissions")
+        .insert(admissionToRow(admission))
+        .select("id, student, course, batch, date, status")
+        .single();
+
+      if (error) {
+        console.error("Admission insert error:", error);
+        alert(`Could not save admission: ${error.message}`);
+        return;
+      }
+
+      setAdmissions((items) => [...items, admissionFromRow(data)]);
     }
 
     setNewAdmission({
@@ -3830,7 +3877,7 @@ Thank you. 🙏
 
                           className="action-btn delete-btn"
 
-                          onClick={() => {
+                          onClick={async () => {
 
                             const confirmDelete =
                               window.confirm(
@@ -3839,11 +3886,19 @@ Thank you. 🙏
 
                             if (confirmDelete) {
 
-                              setAdmissions(
-                                admissions.filter(
-                                  (item) =>
-                                    item.id !== admission.id
-                                )
+                              const { error } = await supabase
+                                .from("admissions")
+                                .delete()
+                                .eq("id", admission.id);
+
+                              if (error) {
+                                console.error("Admission delete error:", error);
+                                alert(`Could not delete admission: ${error.message}`);
+                                return;
+                              }
+
+                              setAdmissions((items) =>
+                                items.filter((item) => item.id !== admission.id)
                               );
 
                             }
