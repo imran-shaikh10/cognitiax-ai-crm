@@ -273,17 +273,26 @@ const [editingStudent, setEditingStudent] = useState(null);
     paidFee: row.paid_fee || "₹0",
   });
 
-  const studentToRow = (student) => ({
-    id: Number(student.id),
-    full_name: student.name || "",
-    phone: student.phone || "",
-    email: student.email || "",
-    course: student.course || "",
-    batch: student.batch || "",
-    status: student.status || "Active",
-    fee: student.fee || "₹0",
-    paid_fee: student.paidFee || "₹0",
-  });
+  const studentToRow = (student) => {
+    const row = {
+      full_name: student.name || "",
+      phone: student.phone || "",
+      email: student.email || "",
+      course: student.course || "",
+      batch: student.batch || "",
+      status: student.status || "Active",
+      fee: student.fee || "₹0",
+      paid_fee: student.paidFee || "₹0",
+    };
+
+    // Supabase generates the UUID automatically for new students.
+    // Keep the existing UUID only when updating an existing student.
+    if (student.id) {
+      row.id = student.id;
+    }
+
+    return row;
+  };
 
   useEffect(() => {
     let active = true;
@@ -315,8 +324,8 @@ const [editingStudent, setEditingStudent] = useState(null);
         if (savedStudents) {
           const localStudents = JSON.parse(savedStudents);
           if (Array.isArray(localStudents) && localStudents.length > 0) {
-            const rows = localStudents.map((student, index) => ({
-              ...studentToRow({ ...student, id: Number(student.id) || Date.now() + index }),
+            const rows = localStudents.map((student) => ({
+              ...studentToRow(student),
             }));
 
             const { data: imported, error: importError } = await supabase
@@ -1017,10 +1026,9 @@ const handleAddStudent = async (e) => {
       )
     );
   } else {
-    const newId = Date.now();
     const { data, error } = await supabase
       .from("students")
-      .insert(studentToRow({ ...studentData, id: newId }))
+      .insert(studentToRow(studentData))
       .select("id, full_name, phone, email, course, batch, status, fee, paid_fee")
       .single();
 
@@ -1842,6 +1850,72 @@ Thank you. 🙏
             width:1050px;
           }
           .students-data-scroll::-webkit-scrollbar{height:6px;}
+
+          /* ===== ADMISSIONS TABLE SCROLL ===== */
+          .admissions-table-card{
+            width:100%;
+            max-width:100%;
+            overflow:hidden !important;
+          }
+
+          .admissions-data-scroll{
+            width:100%;
+            max-width:100%;
+            overflow-x:auto;
+            overflow-y:hidden;
+            -webkit-overflow-scrolling:touch;
+            scrollbar-width:thin;
+            box-sizing:border-box;
+            touch-action:pan-x;
+            overscroll-behavior-x:contain;
+          }
+
+          .admissions-data-scroll table{
+            min-width:900px !important;
+            width:900px !important;
+            max-width:none !important;
+            table-layout:auto;
+          }
+
+          .admissions-data-scroll th,
+          .admissions-data-scroll td{
+            white-space:nowrap;
+          }
+
+          .admissions-data-scroll::-webkit-scrollbar{
+            height:6px;
+          }
+
+          .admissions-data-scroll::-webkit-scrollbar-thumb{
+            border-radius:10px;
+          }
+
+          @media (max-width:640px){
+            .admissions-data-scroll{
+              width:100%;
+              max-width:100%;
+              overflow-x:auto !important;
+              overflow-y:hidden;
+              -webkit-overflow-scrolling:touch;
+              touch-action:pan-x;
+            }
+
+            .admissions-data-scroll table{
+              min-width:900px !important;
+              width:900px !important;
+            }
+
+            .admissions-data-scroll th,
+            .admissions-data-scroll td{
+              white-space:nowrap !important;
+              padding:12px 14px !important;
+            }
+
+            .admissions-data-scroll .student-name{
+              min-width:170px;
+              white-space:nowrap !important;
+            }
+          }
 
           /* ===== GLOBAL APP CONTENT ALIGNMENT ===== */
           .main-content {
@@ -3756,10 +3830,13 @@ Thank you. 🙏
 
             {/* ADMISSIONS TABLE */}
 
-            <div className="students-table-card">
+            <div className="students-table-card admissions-table-card">
 
 
-              <table>
+              <div className="admissions-data-scroll">
+
+
+                <table>
 
 
                 <thead>
@@ -3923,6 +4000,9 @@ Thank you. 🙏
 
 
               </table>
+
+
+              </div>
 
 
             </div>
