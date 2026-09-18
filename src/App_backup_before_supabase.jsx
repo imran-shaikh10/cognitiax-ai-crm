@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
 import Login from "./Login";
-import { supabase } from "./lib/supabaseClient";
 
 /* ---------- ICONS ---------- */
 
@@ -258,90 +257,59 @@ const [editingStudent, setEditingStudent] = useState(null);
 
   /* ================= STUDENTS DATA ================= */
 
-  const [students, setStudents] = useState([]);
-  const [studentsLoading, setStudentsLoading] = useState(true);
+  const [students, setStudents] = useState(() => {
+  const savedStudents = localStorage.getItem("students");
 
-  const studentFromRow = (row) => ({
-    id: row.id,
-    name: row.full_name || "",
-    phone: row.phone || "",
-    email: row.email || "",
-    course: row.course || "",
-    batch: row.batch || "",
-    status: row.status || "Active",
-    fee: row.fee || "₹0",
-    paidFee: row.paid_fee || "₹0",
-  });
+  if (savedStudents) {
+    return JSON.parse(savedStudents);
+  }
 
-  const studentToRow = (student) => ({
-    full_name: student.name || "",
-    phone: student.phone || "",
-    email: student.email || "",
-    course: student.course || "",
-    batch: student.batch || "",
-    status: student.status || "Active",
-    fee: student.fee || "₹0",
-    paid_fee: student.paidFee || "₹0",
-  });
-
-  useEffect(() => {
-    let active = true;
-
-    const loadStudents = async () => {
-      setStudentsLoading(true);
-
-      const { data, error } = await supabase
-        .from("students")
-        .select("id, full_name, phone, email, course, batch, status, fee, paid_fee")
-        .order("id", { ascending: true });
-
-      if (error) {
-        console.error("Students load error:", error);
-        alert(`Could not load students from Supabase: ${error.message}`);
-        if (active) setStudentsLoading(false);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        if (active) setStudents(data.map(studentFromRow));
-        if (active) setStudentsLoading(false);
-        return;
-      }
-
-      // First-time migration: if Supabase is empty, import the current browser data once.
-      try {
-        const savedStudents = localStorage.getItem("students");
-        if (savedStudents) {
-          const localStudents = JSON.parse(savedStudents);
-          if (Array.isArray(localStudents) && localStudents.length > 0) {
-            const rows = localStudents.map((student) => ({
-              id: crypto.randomUUID(),
-              ...studentToRow(student),
-            }));
-
-            const { data: imported, error: importError } = await supabase
-              .from("students")
-              .insert(rows)
-              .select("id, full_name, phone, email, course, batch, status, fee, paid_fee");
-
-            if (importError) {
-              console.error("Students migration error:", importError);
-              alert(`Students table is ready, but existing local students could not be imported: ${importError.message}`);
-            } else if (active) {
-              setStudents((imported || []).map(studentFromRow));
-            }
-          }
-        }
-      } catch (migrationError) {
-        console.error("Students migration error:", migrationError);
-      }
-
-      if (active) setStudentsLoading(false);
-    };
-
-    loadStudents();
-    return () => { active = false; };
-  }, []);
+  return [
+    {
+      id: 1,
+      name: "Rahul Sharma",
+      phone: "9876543210",
+      email: "",
+      course: "AI & Data Science",
+      batch: "AI-01",
+      status: "Active",
+      fee: "₹40,000",
+    },
+    {
+      id: 2,
+      name: "Priya Singh",
+      phone: "9876543211",
+      email: "",
+      course: "Data Analytics",
+      batch: "DA-01",
+      status: "Active",
+      fee: "₹32,000",
+    },
+    {
+      id: 3,
+      name: "Aman Kumar",
+      phone: "9876543212",
+      email: "",
+      course: "Digital Marketing",
+      batch: "DM-01",
+      status: "Pending",
+      fee: "₹25,000",
+    },
+    {
+      id: 4,
+      name: "Neha Gupta",
+      phone: "9876543213",
+      email: "",
+      course: "AI & Data Science",
+      batch: "AI-02",
+      status: "Active",
+      fee: "₹42,000",
+    },
+    ];
+});
+useEffect(() => {
+  localStorage.setItem("students", JSON.stringify(students));
+}, [students]);
 
   /* ================= NEW STUDENT ================= */
 
@@ -936,7 +904,7 @@ const handleEditStudent = (student) => {
 };
   /* ================= ADD STUDENT ================= */
 
-const handleAddStudent = async (e) => {
+const handleAddStudent = (e) => {
   e.preventDefault();
 
   if (
@@ -949,68 +917,46 @@ const handleAddStudent = async (e) => {
     return;
   }
 
-  const studentData = {
-    name: newStudent.name.trim(),
-    phone: newStudent.phone.trim(),
-    email: newStudent.email.trim(),
-    course: newStudent.course,
-    batch: newStudent.batch,
-    status: editingStudent?.status || "Active",
-    fee: newStudent.fee || "₹0",
-    paidFee: newStudent.paidFee || "₹0",
-  };
-
   if (editingStudent) {
-    const { data, error } = await supabase
-      .from("students")
-      .update(studentToRow(studentData))
-      .eq("id", editingStudent.id)
-      .select("id, full_name, phone, email, course, batch, status, fee, paid_fee")
-      .single();
-
-    if (error) {
-      console.error("Student update error:", error);
-      alert(`Could not update student: ${error.message}`);
-      return;
-    }
-
-    setStudents((items) =>
-      items.map((student) =>
-        student.id === editingStudent.id ? studentFromRow(data) : student
+    setStudents(
+      students.map((student) =>
+        student.id === editingStudent.id
+          ? {
+              ...student,
+              ...newStudent,
+            }
+          : student
       )
     );
+
+    setEditingStudent(null);
   } else {
-    const { data, error } = await supabase
-      .from("students")
-      .insert({
-        id: crypto.randomUUID(),
-        ...studentToRow(studentData),
-      })
-      .select("id, full_name, phone, email, course, batch, status, fee, paid_fee")
-      .single();
+    const student = {
+  id: students.length + 1,
+  ...newStudent,
+  status: "Active",
+  fee: newStudent.fee || "₹0",
+  paidFee: newStudent.paidFee || "₹0",
+};
 
-    if (error) {
-      console.error("Student insert error:", error);
-      alert(`Could not add student: ${error.message}`);
-      return;
-    }
-
-    setStudents((items) => [...items, studentFromRow(data)]);
+    setStudents([
+      ...students,
+      student,
+    ]);
   }
 
   setNewStudent({
-    name: "",
-    phone: "",
-    email: "",
-    course: "",
-    batch: "",
-    fee: "",
-    paidFee: "",
-  });
-  setEditingStudent(null);
+  name: "",
+  phone: "",
+  email: "",
+  course: "",
+  batch: "",
+  fee: "",
+  paidFee: "",
+});
+setEditingStudent(null);
   setShowStudentForm(false);
 };
-
 
 
   /* ================= PAYMENT HELPERS ================= */
@@ -3212,20 +3158,11 @@ Thank you. 🙏
 
   <button
     className="action-btn delete-btn"
-    onClick={async () => {
+    onClick={() => {
       if (window.confirm(`Delete ${student.name}?`)) {
-        const { error } = await supabase
-          .from("students")
-          .delete()
-          .eq("id", student.id);
-
-        if (error) {
-          console.error("Student delete error:", error);
-          alert(`Could not delete student: ${error.message}`);
-          return;
-        }
-
-        setStudents((items) => items.filter((item) => item.id !== student.id));
+        setStudents(
+          students.filter((item) => item.id !== student.id)
+        );
       }
     }}
   >
