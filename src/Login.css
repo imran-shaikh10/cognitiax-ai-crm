@@ -355,3 +355,45 @@
   .cx-login-card { padding: 26px 20px; border-radius: 18px; }
   .cx-login-card h2 { font-size: 27px; }
 }
+/* ================================
+   MOBILE SCROLL FIX
+================================ */
+
+@media (max-width: 640px) {
+  html,
+  body,
+  #root {
+    height: auto;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .cx-login-page {
+    min-height: 100dvh;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .cx-login-showcase {
+    min-height: auto;
+    height: auto;
+    flex: none;
+  }
+
+  .cx-login-form-area {
+    min-height: auto;
+    height: auto;
+    flex: none;
+    align-items: flex-start;
+    padding-bottom: 40px;
+  }
+
+  .cx-login-card {
+    height: auto;
+    flex-shrink: 0;
+  }
+}
